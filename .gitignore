@@ -11,3 +11,6 @@ temp/*
 
 # Local GUI environment
 .venv/
+
+# Separate headless MCP environment
+.venv-mcp/

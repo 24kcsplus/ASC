@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "asc": {
+      "command": "/mnt/tiplus7100/ctf/tools/asc_newgui/run-mcp.sh",
+      "args": ["--timeout", "180"]
+    }
+  }
+}
