@@ -8,3 +8,6 @@ testcase.txt
 *.jar
 *.jadx
 temp/*
+
+# Local GUI environment
+.venv/
