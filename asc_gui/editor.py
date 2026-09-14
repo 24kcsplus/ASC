@@ -3,7 +3,7 @@ from array import array
 from PySide6.QtCore import Qt, QRect, QSize, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QSyntaxHighlighter, QTextCharFormat, QTextCursor, QTextFormat
 from PySide6.QtWidgets import QPlainTextEdit, QWidget, QTextEdit
-from .navigation import mask_literals, identifier_at
+from .navigation import mask_literals, identifier_at, declarations
 from .xref import IDENT, python_offset
 
 
@@ -273,4 +273,8 @@ class CodeEditor(QPlainTextEdit):
         position = self.cursorForPosition(event.position().toPoint()).position()
         super().mouseDoubleClickEvent(event)
         if event.button() == Qt.LeftButton and not event.modifiers():
+            source, _ = self.source_context()
+            token = identifier_at(source, python_offset(source, position))
+            if token and any(row['offset'] == token[0] for row in declarations(source)):
+                return
             self.definitionRequested.emit(position)
