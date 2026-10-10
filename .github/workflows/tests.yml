@@ -24,8 +24,10 @@ jobs:
       - name: Checkout performance baseline
         uses: actions/checkout@v7.0.1
         with:
-          repository: ${{ github.event.pull_request.base.repo.full_name || (github.event_name == 'push' && github.ref_name == 'dev-0.1.0' && github.repository) || 'MG1937/ASC' }}
-          ref: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || (github.event_name == 'push' && github.ref_name == 'dev-0.1.0' && github.event.before) || 'dev-0.1.0' }}
+          # Keep caller, PR, and previous-push SHAs in their own repositories.
+          # New branches have a zero before SHA; use this fork's default branch.
+          repository: ${{ (inputs.baseline_sha && github.repository) || github.event.pull_request.base.repo.full_name || github.repository }}
+          ref: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000' && github.event.before) || github.event.repository.default_branch }}
           path: .performance-base
       - uses: actions/setup-python@v7.0.0
         with:
