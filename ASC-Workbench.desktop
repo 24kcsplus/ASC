@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ASC Workbench
+Comment=Android APK 代码浏览与引用检索
+Exec=/mnt/tiplus7100/ctf/tools/asc_newgui/run-gui.sh %f
+Path=/mnt/tiplus7100/ctf/tools/asc_newgui
+Terminal=false
+Categories=Development;Utility;
+MimeType=application/vnd.android.package-archive;

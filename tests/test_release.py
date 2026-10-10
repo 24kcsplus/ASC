@@ -27,12 +27,40 @@ class ReleaseTests(unittest.TestCase):
                              hashlib.sha256(original).hexdigest())
             with zipfile.ZipFile(archive) as package:
                 names = package.namelist()
-                self.assertTrue(any(name.endswith('/requirements.txt') for name in names))
-                self.assertIn('ASC-v0.1.0-rc.1/LICENSE', names)
+                prefix = 'ASC-v0.1.0-rc.1/'
+                required = (
+                    'LICENSE', 'requirements.txt',
+                    'requirements-gui.txt', 'requirements-gui-lock.txt',
+                    'requirements-mcp.txt', 'requirements-mcp-lock.txt',
+                    'README.md', 'README-GUI.md', 'README-MCP.md', 'VALIDATION.md',
+                    'mcp-config.example.json',
+                    'asc_gui/__main__.py', 'asc_gui/app.py', 'asc_gui/assets/close.svg',
+                    'asc_mcp/__main__.py', 'asc_mcp/server.py', 'asc_mcp/worker.py',
+                )
+                for path in required:
+                    self.assertIn(prefix + path, names)
+                for path in ('install-gui.sh', 'run-gui.sh', 'install-mcp.sh', 'run-mcp.sh'):
+                    info = package.getinfo(prefix + path)
+                    self.assertEqual(info.create_system, 3)
+                    self.assertEqual(info.external_attr >> 16, 0o100755)
+                self.assertEqual(package.getinfo(prefix + 'asc_mcp/server.py').external_attr >> 16,
+                                 0o100644)
                 self.assertFalse(any(name.endswith(('.dex', '.apk', '/test.py', '/test_findrefs.py'))
-                                     or '/tests/' in name or '/.git/' in name for name in names))
+                                     or any(part in name for part in
+                                            ('/tests/', '/.git/', '/screenshots/', '/.venv/',
+                                             '/.venv-mcp/', '/__pycache__/')) for name in names))
                 package.extractall(root)
             app = root / 'ASC-v0.1.0-rc.1'
+            # Analysis imports the shared GUI parsers without importing Qt or MCP.
+            result = subprocess.run([
+                sys.executable, '-I', '-c',
+                'import sys; sys.path.insert(0, sys.argv[1]); '
+                'from asc_mcp.analysis import AnalysisSession; '
+                'assert not AnalysisSession().status()["loaded"]; '
+                'assert "PySide6" not in sys.modules and "mcp" not in sys.modules',
+                str(app),
+            ], cwd=root, capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stderr)
             apk = root / 'fixture.apk'
             with zipfile.ZipFile(apk, 'w', compression=zipfile.ZIP_DEFLATED) as package:
                 package.writestr('classes.dex', make_dex())
