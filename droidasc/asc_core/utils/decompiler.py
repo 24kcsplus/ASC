@@ -1,89 +1,8 @@
-import sys
-import types
+from dadguard.core.dex import DEX
+from dadguard.core.analysis.analysis import Analysis
+import dadguard.core.dex as dadguard_dex
 
-
-class DummyClass: pass
-class DummyModule:
-    __path__ = []
-    def __init__(self):
-        self.APK = DummyClass
-    def __getattr__(self, name): return DummyModule()
-    def __iter__(self): return iter([])
-    def __call__(self, *args, **kwargs): return DummyModule()
-    
-
-# The dummy import trick bascially gen by LLM 20260607
-
-# Install the stubs only for modules that are not already imported. Replacing a real,
-# already imported module (multiprocessing in particular, which concurrent.futures pulls
-# in) breaks every later `import` of it: a stub package has __path__ = [], so
-# `import multiprocessing.connection` raises ModuleNotFoundError and callers that use the
-# placeholder instead fail silently. Dropping a stub that is not needed anyway costs
-# nothing, so this keeps the startup saving without clobbering live modules.
-_STUBBED_MODULES = (
-    'androguard.core.apk',
-    'networkx',
-    'pygments',
-    'lxml',
-    'asn1crypto',
-    'asn1crypto.x509',
-    'cryptography',
-    'matplotlib',
-    'pydot',
-    'IPython',
-    'colorama',
-    'dateutil',
-    'urllib3',
-    'requests',
-    'idna',
-    'chardet',
-    'certifi',
-    'pkg_resources',
-    'loguru',
-    'loguru._logger',
-    'click',
-    'urllib',
-    'urllib.request',
-    'http.client',
-    'email',
-    'email.parser',
-    'email.message',
-    'multiprocessing',
-    'multiprocessing.context',
-    'multiprocessing.reduction',
-    'xml.sax.saxutils',
-    'tempfile',
-    'bz2',
-    'lzma',
-    'shutil',
-    'bisect',
-    'random',
-    'json',
-    'json.scanner',
-    'json.decoder',
-    'json.encoder',
-    'math',
-    'weakref',
-)
-def _install_stub(name):
-    existing = sys.modules.get(name)
-    if existing is not None and not isinstance(existing, DummyModule):
-        # a real module is already loaded: never clobber it with a placeholder
-        return
-    parent = sys.modules.get(name.split('.')[0])
-    if isinstance(parent, types.ModuleType) and not isinstance(parent, DummyModule):
-        # the real parent package is loaded, so this submodule must stay importable
-        return
-    sys.modules[name] = DummyModule()
-
-
-for _name in _STUBBED_MODULES:
-    _install_stub(_name)
-
-from androguard.core.dex import DEX
-import androguard.core.dex as androguard_dex
-
-original_header_init = androguard_dex.HeaderItem.__init__
+original_header_init = dadguard_dex.HeaderItem.__init__
 def monkey_header_init(self, offset, buff, cm):
     try:
         original_header_init(self, offset, buff, cm)
@@ -92,23 +11,23 @@ def monkey_header_init(self, offset, buff, cm):
             pass
         else:
             raise e
-androguard_dex.HeaderItem.__init__ = monkey_header_init
+dadguard_dex.HeaderItem.__init__ = monkey_header_init
 
-from androguard.decompiler import decompile
-from androguard.decompiler import instruction as androguard_instruction
-from androguard.decompiler import util as androguard_util
-from androguard.core.analysis.analysis import MethodAnalysis
-import androguard.core.androconf as androconf
+from dadguard.decompiler import decompile
+from dadguard.decompiler import instruction as dadguard_instruction
+from dadguard.decompiler import util as dadguard_util
+from dadguard.core.analysis.analysis import MethodAnalysis
+import dadguard.core.androconf as androconf
 import functools
 
-# --- Androguard String Operations & Type Parsing Optimizations ---
+# --- dadguard String Operations & Type Parsing Optimizations ---
 # Dalvik bytecode formatting and access flag resolution generates a massive amount
 # of redundant string objects. We wrap them all in LRU caches.
-androguard_util.get_type = functools.lru_cache(maxsize=4096)(androguard_util.get_type)
-androguard_util.get_type_size = functools.lru_cache(maxsize=4096)(androguard_util.get_type_size)
-androguard_util.get_access_class = functools.lru_cache(maxsize=256)(androguard_util.get_access_class)
-androguard_util.get_access_method = functools.lru_cache(maxsize=256)(androguard_util.get_access_method)
-androguard_util.get_access_field = functools.lru_cache(maxsize=256)(androguard_util.get_access_field)
+dadguard_util.get_type = functools.lru_cache(maxsize=4096)(dadguard_util.get_type)
+dadguard_util.get_type_size = functools.lru_cache(maxsize=4096)(dadguard_util.get_type_size)
+dadguard_util.get_access_class = functools.lru_cache(maxsize=256)(dadguard_util.get_access_class)
+dadguard_util.get_access_method = functools.lru_cache(maxsize=256)(dadguard_util.get_access_method)
+dadguard_util.get_access_field = functools.lru_cache(maxsize=256)(dadguard_util.get_access_field)
 
 # Cache the class name parsing which involves heavy rsplit/replace operations
 @functools.lru_cache(maxsize=4096)
@@ -129,17 +48,17 @@ def _format_annotation_type(raw_name):
 def _format_annotation_value(value):
     value_type = value.get_value_type()
     raw_value = value.get_value()
-    if value_type == androguard_dex.VALUE_STRING:
+    if value_type == dadguard_dex.VALUE_STRING:
         return '"%s"' % str(raw_value).encode("unicode-escape").decode("ascii")
-    if value_type == androguard_dex.VALUE_TYPE:
+    if value_type == dadguard_dex.VALUE_TYPE:
         return "%s.class" % _format_annotation_type(str(raw_value))
-    if value_type == androguard_dex.VALUE_ARRAY:
+    if value_type == dadguard_dex.VALUE_ARRAY:
         return "{%s}" % ", ".join(_format_annotation_value(v) for v in raw_value.get_values())
-    if value_type == androguard_dex.VALUE_ANNOTATION:
+    if value_type == dadguard_dex.VALUE_ANNOTATION:
         return _format_encoded_annotation(raw_value)
-    if value_type == androguard_dex.VALUE_BOOLEAN:
+    if value_type == dadguard_dex.VALUE_BOOLEAN:
         return "true" if raw_value else "false"
-    if value_type == androguard_dex.VALUE_NULL:
+    if value_type == dadguard_dex.VALUE_NULL:
         return "null"
     return str(raw_value)
 
@@ -189,16 +108,16 @@ def patched_dvclass_init(self, dvclass, vma):
     self.fields = dvclass.get_fields()
     self.code = []
     self.inner = False
-    
+
     raw_name = dvclass.get_name()
     self.package, self.name = _fast_parse_class_info(raw_name)
-    
+
     access = dvclass.get_access_flags()
     proto_fmt = '%s %s' if (0x200 & access) else '%s class %s'
     if (0x200 & access) and (access & 0x400):
         access -= 0x400
-        
-    self.access = androguard_util.get_access_class(access)
+
+    self.access = dadguard_util.get_access_class(access)
     self.prototype = proto_fmt % (' '.join(self.access), self.name)
     self.interfaces = dvclass.get_interfaces()
     self.superclass = dvclass.get_superclassname()
@@ -237,7 +156,7 @@ def patched_dvmethod_get_source_ext(self) -> list[tuple]:
 
 decompile.DvMethod.get_source_ext = patched_dvmethod_get_source_ext
 
-# Preserve the declaring field on source tokens. Androguard's default Writer
+# Preserve the declaring field on source tokens. dadguard's default Writer
 # keeps the field name for instance accesses and only a combined text token for
 # static accesses, but drops the field IR object containing clsdesc.
 def patched_instance_expression_visit(self, visitor):
@@ -280,15 +199,15 @@ def patched_static_instruction_visit(self, visitor):
     )
 
 
-androguard_instruction.InstanceExpression.visit = patched_instance_expression_visit
-androguard_instruction.InstanceInstruction.visit = patched_instance_instruction_visit
-androguard_instruction.StaticExpression.visit = patched_static_expression_visit
-androguard_instruction.StaticInstruction.visit = patched_static_instruction_visit
+dadguard_instruction.InstanceExpression.visit = patched_instance_expression_visit
+dadguard_instruction.InstanceInstruction.visit = patched_instance_instruction_visit
+dadguard_instruction.StaticExpression.visit = patched_static_expression_visit
+dadguard_instruction.StaticInstruction.visit = patched_static_instruction_visit
 decompile.Writer.visit_get_static = patched_writer_get_static
 decompile.Writer.visit_put_static = patched_writer_put_static
 # --- End of String/Type Optimizations ---
 
-# We also completely disable ALL androguard loggers via python's standard logging module
+# We also completely disable ALL dadguard loggers via python's standard logging module
 # import logging
 
 # Create a filter that blocks ALL records
@@ -299,13 +218,13 @@ decompile.Writer.visit_put_static = patched_writer_put_static
 # block_filter = BlockAllFilter()
 
 # for log_name in [
-#     'androguard.decompiler.dataflow',
-#     'androguard.decompiler.decompile',
-#     'androguard.decompiler.opcode_ins',
-#     'androguard.core.dex',
-#     'androguard.core.analysis.analysis',
-#     'androguard.core.bytecodes.dvm',
-#     'androguard'
+#     'dadguard.decompiler.dataflow',
+#     'dadguard.decompiler.decompile',
+#     'dadguard.decompiler.opcode_ins',
+#     'dadguard.core.dex',
+#     'dadguard.core.analysis.analysis',
+#     'dadguard.core.bytecodes.dvm',
+#     'dadguard'
 # ]:
 #     log = logging.getLogger(log_name)
 #     log.setLevel(logging.CRITICAL)
@@ -319,7 +238,7 @@ class FakeAnalysis:
         self.methods = {}
         self.classes = {}
         self.vm = vm
-        
+
     def get_method(self, method):
         if method not in self.methods:
             ma = MethodAnalysis(self.vm, method)
@@ -328,18 +247,18 @@ class FakeAnalysis:
 
 def _decompile_class(dex_bytes: bytearray, dalvik_class_fmt: str):
     """
-    Take DEX bytes and a target class format, decompile it using Androguard DAD
+    Take DEX bytes and a target class format, decompile it using dadguard DAD
     and return the source code.
     """
 
-    # androguard requires bytes or bytearray
+    # dadguard requires bytes or bytearray
     d = DEX(bytes(dex_bytes))
-    dx = FakeAnalysis(d)
-    
+    dx = Analysis(d)
+
     target_class = d.get_class(dalvik_class_fmt)
     if not target_class:
         return None
-        
+
     c = decompile.DvClass(target_class, dx)
     c.process()
     return c
@@ -354,8 +273,8 @@ def _dalvik_class_name(name : str) -> str:
     return name
 
 
-# reuse androguard daddecompiler's token type, we can extract source' semantics, enhance gui xref ability
-# 20260921 we may extract daddecompiler from androguard in future, for better development
+# reuse dadguard daddecompiler's token type, we can extract source' semantics, enhance gui xref ability
+# 20260921 we may extract daddecompiler from dadguard in future, for better development
 def _source_with_member_references(source_ext):
     parts = []
     references = []
