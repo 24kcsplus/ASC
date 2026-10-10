@@ -13,8 +13,8 @@ if __name__ == '__main__':
     parser.add_argument('--require-decompiler', action='store_true')
     parser.add_argument('--suite', choices=('all', 'unit', 'integration'), default='all')
     args = parser.parse_args()
-    if args.require_decompiler and importlib.util.find_spec('androguard') is None:
-        parser.error('Androguard is required; install requirements.txt')
+    if args.require_decompiler and importlib.util.find_spec('dadguard') is None:
+        parser.error('dadguard is required; check the source tree')
     suite = unittest.defaultTestLoader.discover(str(ROOT / 'tests'), pattern='test_*.py')
     if args.suite != 'all':
         def tests(items):

@@ -37,9 +37,9 @@ class RebuildTests(unittest.TestCase):
         self.assertEqual(dex.fields[field_idx].name, 'SECOND')
 
 
-@unittest.skipUnless(importlib.util.find_spec('androguard'), 'install requirements.txt for decompiler tests')
+@unittest.skipUnless(importlib.util.find_spec('dadguard'), 'dadguard is required for decompiler tests')
 class DecompilerTests(unittest.TestCase):
-    def test_decompile_keeps_dummy_fast_path_and_class_zero(self):
+    def test_decompile_uses_dadguard_and_keeps_class_zero(self):
         script = """
 import sys
 sys.path.insert(0, 'tests')
@@ -52,9 +52,8 @@ for _ in range(2):
     assert 'class Test' in source
     assert 'void first()' in source
     assert 'void second()' in source
-for name in ('email', 'xml.sax.saxutils', 'networkx', 'loguru'):
-    assert type(sys.modules[name]).__name__ == 'DummyModule', name
-    assert not any(module == name or module.startswith(name + '.') for module in loaded), name
+assert 'dadguard' in sys.modules
+assert not any(module == 'androguard' or module.startswith('androguard.') for module in loaded)
 assert sys.modules['mutf8.cmutf8'].decode_modified_utf8.__module__ == '_asc_client_mutf8_py'
 """
         result = subprocess.run([sys.executable, '-c', script], cwd=ROOT,
