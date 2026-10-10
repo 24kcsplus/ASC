@@ -1,0 +1,36 @@
+[
+  {
+    "kind": "字符串引用",
+    "query": "check_env",
+    "rows": 1
+  },
+  {
+    "kind": "类型引用",
+    "query": "Activity",
+    "rows": 3
+  },
+  {
+    "kind": "方法引用",
+    "query": "onCreate",
+    "rows": 2
+  },
+  {
+    "kind": "字段引用",
+    "query": "Companion",
+    "rows": 236
+  },
+  {
+    "kind": "查找方法",
+    "query": "onCreate",
+    "rows": 3
+  },
+  {
+    "kind": "查找字段",
+    "query": "Companion",
+    "rows": 47
+  },
+  {
+    "kind": "字段引用限定类",
+    "rows": 1
+  }
+]

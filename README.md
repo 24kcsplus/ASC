@@ -1,3 +1,7 @@
+> **MCP：** 本地 stdio 分析服务与接入配置见 [README-MCP.md](README-MCP.md)。
+
+> **新 GUI：ASC Workbench** — 运行 `./run-gui.sh`。安装、功能和快捷键见 [README-GUI.md](README-GUI.md)，验证记录见 [VALIDATION.md](VALIDATION.md)。
+
 # Droid ASC: R8 Compiler Optimization as a DeCompiler Primitive
 https://blackhat.com/europe/arsenal/schedule/index.html#droid-asc-r8-compiler-optimization-as-a-decompiler-primitive-54834  
 

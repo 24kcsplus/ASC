@@ -20,3 +20,5 @@ artifacts/reference/
 .performance-base/
 artifacts/comparison/
 dist/
+# Separate headless MCP environment
+.venv-mcp/
